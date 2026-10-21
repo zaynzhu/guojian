@@ -35,6 +35,9 @@
 - **易错点**：
   - `git switch --orphan` 不清 index，直接用会把主线文件全部带入归档提交；
   - 工作区有 `.dart_tool/`、`build/` 等 ignored 缓存时，切到归档分支后 `git add -A` 可能按归档源码自带的 .gitignore 规则把残留误提交——先 `git status --ignored --short` 确认无输出；
-  - Windows 下 `git add` 满屏 `warning: LF will be replaced by CRLF` 是行尾提示，仓库内仍按 LF 规范存储，不是错误；
+  - Windows 下 `git add` 满屏 `warning: LF will be replaced by CRLF` 只是 checkout 预告，实测入库 blob 保留作者原字节（CRLF 文件 CRLF 入库），不是错误；
+  - **验证归档保真不要用 `git archive` 导出对比**：archive 会按仓库 .gitattributes 的 `text=auto`/eol 规则转换导出内容，曾把 373 个文件中的 78 个制造出假哈希差异（去 CR 后字节全同）；权威方法是用 `git ls-tree -r <分支>` 的 blob 哈希对比 `git hash-object --no-filters <原文件>` 的原字节哈希（2026-10-21 实测 373/373 字节一致）；
   - 归档分支只留本地仓库：本项目 `scripts/sync_source.py` 的 `SOURCE_DIRECTORIES` 白名单不含 `docs`，镜像与压缩包天然不外发；`git switch main` 后工作区即恢复主线，收尾同步脚本照常可用。
 - **本仓库背景**："原始"分支归档的是作者原版 `duanju_app` `0.2.55+61`（当时 main 为 `0.2.73+88`），来源 `D:\下载\真果·鉴.zip`（zip 顶层文件夹 `guoapp/` 已去掉）。
+
+> 修订 2026-10-21：哈希级复验确认归档字节保真（`git ls-tree` blob 哈希 vs 源文件 `git hash-object --no-filters`，373/373 一致）；修正初版"仓库内按 LF 规范存储"的错误推断——实测 blob 保留作者原字节；新增 git archive 导出假差异坑与权威验证方法。
